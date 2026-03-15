@@ -24,7 +24,7 @@ export default function AdminDashboard() {
   const [filterCategory, setFilterCategory] = useState("All");
 
   // Modal State
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedFeedback, setSelectedFeedback] = useState<any | null>(null);
 
   useEffect(() => {
     fetchFeedbacks();
@@ -159,116 +159,121 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* List / Table Content Section */}
-        <div className="bg-[#1C1C1E]/60 backdrop-blur-2xl border border-white/10 rounded-[28px] overflow-hidden shadow-2xl">
+        {/* Compact List / Table Content Section */}
+        <div className="bg-[#1C1C1E]/60 backdrop-blur-2xl border border-white/10 rounded-[24px] overflow-hidden shadow-2xl">
           {isLoading ? (
-            <div className="flex justify-center items-center py-32">
-               <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
+            <div className="flex justify-center items-center py-20">
+               <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
             </div>
           ) : filteredFeedbacks.length === 0 ? (
-            <div className="text-center py-32 text-zinc-500">
-              <p className="text-[17px]">No feedback matches your filters.</p>
+            <div className="text-center py-20 text-zinc-500">
+              <p className="text-[15px]">No feedback matches your filters.</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/5">
+            <div className="flex flex-col">
               {/* Header Row */}
-              <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-white/5 text-[12px] font-semibold text-zinc-500 uppercase tracking-wider hidden md:grid">
-                <div className="col-span-2">Date</div>
+              <div className="grid grid-cols-12 gap-3 px-5 py-3 bg-white/5 border-b border-white/5 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider hidden md:grid items-center">
                 <div className="col-span-1">PIN</div>
                 <div className="col-span-2">Category</div>
                 <div className="col-span-5">Notes</div>
-                <div className="col-span-1 text-center">Media</div>
-                <div className="col-span-1 text-right">Action</div>
+                <div className="col-span-2">Date</div>
+                <div className="col-span-2 text-right">Actions</div>
               </div>
 
               {/* Data Rows */}
-              {filteredFeedbacks.map((item) => (
-                <div 
-                  key={item.id} 
-                  className="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-white/[0.03] transition-colors group"
-                >
-                  {/* Date (Mobile: shown at top right) */}
-                  <div className="md:col-span-2 flex flex-col justify-center order-2 md:order-1">
-                    <span className="text-[14px] text-zinc-300">
-                       {format(new Date(item.createdAt), "MMM d, yyyy")}
-                    </span>
-                    <span className="text-[12px] text-zinc-500">
-                       {format(new Date(item.createdAt), "h:mm a")}
-                    </span>
-                  </div>
+              <div className="divide-y divide-white/[0.03]">
+                {filteredFeedbacks.map((item) => {
+                  const CategoryColor = (cat: string) => {
+                    switch (cat) {
+                      case 'Bug': return 'bg-red-500/10 text-red-500 border-red-500/20';
+                      case 'Feature Request': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+                      case 'UI/UX Suggestion': return 'bg-purple-500/10 text-purple-500 border-purple-500/20';
+                      default: return 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
+                    }
+                  };
 
-                  {/* PIN */}
-                  <div className="md:col-span-1 order-1 md:order-2 flex justify-between md:block mb-2 md:mb-0">
-                    <span className="md:hidden text-[12px] text-zinc-500 font-semibold uppercase tracking-wider">PIN: </span>
-                    <span className="text-[13px] font-mono text-zinc-300 bg-white/5 border border-white/10 px-2 py-1 rounded-md">
-                      {item.pin}
-                    </span>
-                  </div>
-
-                  {/* Category */}
-                  <div className="md:col-span-2 order-3">
-                    <span className="text-[13px] font-medium text-[#007AFF] bg-[#007AFF]/10 px-3 py-1.5 rounded-full whitespace-nowrap inline-block">
-                      {item.category}
-                    </span>
-                  </div>
-
-                  {/* Notes Snippet */}
-                  <div className="md:col-span-5 order-4 mt-3 md:mt-0">
-                     {item.text ? (
-                      <p className="text-[14px] text-zinc-300 line-clamp-2 md:line-clamp-1 group-hover:line-clamp-none transition-all duration-300">
-                        {item.text}
-                      </p>
-                    ) : (
-                      <span className="text-[14px] text-zinc-600 italic">No notes provided</span>
-                    )}
-                  </div>
-
-                  {/* Media / Attachment */}
-                  <div className="md:col-span-1 flex justify-start md:justify-center order-5 mt-3 md:mt-0">
-                    {item.imageUrl ? (
-                      <button
-                        onClick={() => setSelectedImage(item.imageUrl)}
-                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-white/5 hover:bg-white/10 border border-white/5 text-zinc-300 transition-colors"
-                        title="View Screenshot"
-                      >
-                         <ImageIcon className="h-4 w-4" />
-                         <span className="text-[12px] font-medium md:hidden">View Screenshot</span>
-                      </button>
-                    ) : (
-                      <span className="text-zinc-600 text-[12px] md:text-center block w-full">-</span>
-                    )}
-                  </div>
-
-                  {/* Action (Delete) */}
-                  <div className="md:col-span-1 flex justify-end order-6 mt-3 md:mt-0">
-                    <button
-                      onClick={(e) => handleDelete(item.id, e)}
-                      className="p-2 rounded-[10px] bg-white/5 hover:bg-red-500/20 text-zinc-500 hover:text-red-500 transition-colors border border-white/5"
-                      title="Delete Feedback"
+                  return (
+                    <div 
+                      key={item.id} 
+                      onClick={() => setSelectedFeedback(item)}
+                      className="grid grid-cols-1 md:grid-cols-12 gap-3 px-5 py-3 min-h-[48px] items-center hover:bg-white/[0.04] transition-colors cursor-pointer group"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                      {/* PIN Badge */}
+                      <div className="col-span-1 flex items-center">
+                        <span className="text-[12px] font-mono text-zinc-300 bg-black/40 border border-white/5 px-1.5 py-0.5 rounded-[6px]">
+                          {item.pin}
+                        </span>
+                      </div>
+
+                      {/* Category Pill */}
+                      <div className="col-span-2 flex items-center mt-2 md:mt-0">
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${CategoryColor(item.category)} whitespace-nowrap`}>
+                          {item.category}
+                        </span>
+                      </div>
+
+                      {/* Notes Snippet */}
+                      <div className="col-span-5 flex items-center mt-2 md:mt-0">
+                        {item.text ? (
+                          <p className="text-[14px] text-zinc-300 truncate w-full">
+                            {item.text}
+                          </p>
+                        ) : (
+                          <span className="text-[13px] text-zinc-600 italic">No notes</span>
+                        )}
+                      </div>
+
+                      {/* Date */}
+                      <div className="col-span-2 flex items-center mt-2 md:mt-0">
+                        <span className="text-[12px] text-zinc-500 whitespace-nowrap">
+                          {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                        </span>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="col-span-2 flex items-center justify-end gap-1 mt-3 md:mt-0" onClick={(e) => e.stopPropagation()}>
+                        {item.imageUrl && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedFeedback(item);
+                            }}
+                            className="p-1.5 rounded-[8px] bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors border border-transparent hover:border-white/5"
+                            title="View Feedback Details"
+                          >
+                            <ImageIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => handleDelete(item.id, e)}
+                          className="p-1.5 rounded-[8px] bg-white/5 hover:bg-red-500/20 text-zinc-500 hover:text-red-500 transition-colors border border-transparent hover:border-red-500/10"
+                          title="Delete Feedback"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Framer Motion Full-Screen Image Modal */}
+        {/* Framer Motion Full-Screen Details Modal */}
         <AnimatePresence>
-          {selectedImage && (
+          {selectedFeedback && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-xl"
-              onClick={() => setSelectedImage(null)}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-2xl"
+              onClick={() => setSelectedFeedback(null)}
             >
               <div className="absolute top-6 right-6 z-50">
                 <button
-                  onClick={() => setSelectedImage(null)}
+                  onClick={() => setSelectedFeedback(null)}
                   className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-colors"
                 >
                   <X className="h-5 w-5" />
@@ -280,15 +285,50 @@ export default function AdminDashboard() {
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
                 transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
-                className="relative max-w-5xl w-full max-h-[85vh] flex items-center justify-center outline-none"
-                onClick={(e) => e.stopPropagation()} // Prevent close when clicking image directly
+                className="relative max-w-4xl w-full max-h-[85vh] flex flex-col md:flex-row bg-[#1C1C1E] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src={selectedImage} 
-                  alt="Full screen feedback screenshot" 
-                  className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/10"
-                />
+                {/* Image Section (if exists) */}
+                {selectedFeedback.imageUrl && (
+                  <div className="w-full md:w-3/5 bg-black border-b md:border-b-0 md:border-r border-white/10 flex items-center justify-center relative overflow-hidden min-h-[300px]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                      src={selectedFeedback.imageUrl} 
+                      alt="Full screen feedback screenshot" 
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                )}
+                
+                {/* Details Section */}
+                <div className={`p-8 w-full ${selectedFeedback.imageUrl ? 'md:w-2/5' : ''} flex flex-col h-full overflow-y-auto`}>
+                  
+                  <div className="flex items-center justify-between mb-6">
+                    <span className="text-[13px] font-medium text-[#007AFF] bg-[#007AFF]/10 px-3 py-1.5 rounded-full inline-block">
+                      {selectedFeedback.category}
+                    </span>
+                    <span className="text-[13px] font-mono text-zinc-400 bg-black border border-white/5 px-2.5 py-1 rounded-md">
+                      PIN: {selectedFeedback.pin}
+                    </span>
+                  </div>
+                  
+                  <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Notes</h3>
+                  <div className="flex-grow">
+                    {selectedFeedback.text ? (
+                      <p className="text-[16px] text-zinc-200 leading-relaxed whitespace-pre-wrap">
+                        {selectedFeedback.text}
+                      </p>
+                    ) : (
+                      <p className="text-[16px] text-zinc-600 italic">No notes provided.</p>
+                    )}
+                  </div>
+                  
+                  <div className="pt-6 mt-6 border-t border-white/5">
+                    <p className="text-[13px] text-zinc-500">
+                      Submitted on {format(new Date(selectedFeedback.createdAt), "MMMM d, yyyy 'at' h:mm a")}
+                    </p>
+                  </div>
+                </div>
               </motion.div>
             </motion.div>
           )}
