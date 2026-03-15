@@ -9,6 +9,8 @@ datasource db {
 
 model Feedback {
   id        String   @id @default(cuid())
+  pin       String
+  category  String   @default("Other")
   text      String?
   imageUrl  String?
   createdAt DateTime @default(now())

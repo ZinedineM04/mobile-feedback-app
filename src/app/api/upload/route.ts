@@ -8,6 +8,7 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const pin = formData.get("pin") as string;
+    const category = (formData.get("category") as string) || "Other";
     const text = formData.get("text") as string | null;
     const file = formData.get("file") as File | null;
 
@@ -44,6 +45,8 @@ export async function POST(req: NextRequest) {
 
     const feedback = await prisma.feedback.create({
       data: {
+        pin,
+        category,
         text,
         imageUrl,
       },

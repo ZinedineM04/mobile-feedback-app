@@ -3,36 +3,64 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Upload, ClipboardPaste, Send, Loader2, Apple } from "lucide-react";
+import { Upload, ClipboardPaste, Send, Loader2, Apple, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { formatDistanceToNow } from "date-fns";
 
 export default function Home() {
   const router = useRouter();
   
   // State for flow
-  const [step, setStep] = useState<"pin" | "form">("pin");
+  const [step, setStep] = useState<"pin" | "form" | "success">("pin");
   
   // State for form
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState(false);
+  const [category, setCategory] = useState("Bug");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // History state
+  const [history, setHistory] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Focus ref for PIN input
   const pinInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (step === "pin") {
       pinInputRef.current?.focus();
+    } else if (step === "form") {
+      fetchHistory();
     }
   }, [step]);
+
+  const fetchHistory = async () => {
+    setIsLoadingHistory(true);
+    try {
+      const res = await fetch(`/api/feedback?pin=${pin}`);
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(data.feedbacks || []);
+      }
+    } catch (error) {
+      console.error("Failed to load history", error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
 
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +77,6 @@ export default function Home() {
       setStep("form");
     } else {
       setPinError(true);
-      // Small vibration if supported (Chrome on Android, Safari doesn't support generic JS vibration usually but good practice)
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate(50);
       }
@@ -87,6 +114,13 @@ export default function Home() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const resetForm = () => {
+    setCategory("Bug");
+    setText("");
+    clearImage();
+    setStep("form");
+  };
+
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -99,6 +133,7 @@ export default function Home() {
 
     const formData = new FormData();
     formData.append("pin", pin);
+    formData.append("category", category);
     if (text) formData.append("text", text);
     if (file) formData.append("file", file);
 
@@ -114,15 +149,7 @@ export default function Home() {
         throw new Error(data.error || "Submission failed");
       }
 
-      toast.success("Feedback sent successfully", {
-        position: "top-center"
-      });
-      setText("");
-      clearImage();
-      // Route back to PIN for security, or keep them here.
-      // Apple-like behavior might be returning to a success state or gate. 
-      // We will keep them here for quick multiple entries as requested natively, 
-      // but you can clear it if needed.
+      setStep("success");
     } catch (error: any) {
       toast.error(error.message || "An error occurred", {
         position: "top-center"
@@ -134,13 +161,12 @@ export default function Home() {
 
   return (
     <main 
-      className="min-h-screen bg-[#000000] text-zinc-100 flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden"
+      className="min-h-screen bg-[#000000] text-zinc-100 flex flex-col items-center justify-center p-4 sm:p-6 overflow-x-hidden"
       style={{
-        // System UI font stack that perfectly replicates iOS
         fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
       }}
     >
-      <div className="w-full max-w-sm relative">
+      <div className="w-full max-w-md relative pb-10">
         <AnimatePresence mode="wait">
           
           {/* STEP 1: PIN GATEKEEPER */}
@@ -150,8 +176,8 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }} // Apple-style spring/ease
-              className="space-y-8"
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="space-y-8 absolute w-full top-1/2 -mt-32"
             >
               <div className="text-center space-y-3">
                 <div className="mx-auto w-16 h-16 bg-zinc-900 rounded-[22px] flex items-center justify-center shadow-inner border border-zinc-800">
@@ -221,7 +247,7 @@ export default function Home() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="space-y-6 w-full"
+              className="space-y-8 w-full mt-4"
               onPaste={handlePaste}
             >
               <div className="flex items-center justify-between mb-2">
@@ -229,8 +255,9 @@ export default function Home() {
                   onClick={() => {
                     setStep("pin");
                     setPin("");
+                    setHistory([]);
                   }}
-                  className="flex items-center text-[#007AFF] text-[17px]"
+                  className="flex items-center text-[#007AFF] text-[17px] transition-opacity hover:opacity-80"
                 >
                   <svg width="12" height="20" viewBox="0 0 12 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-1">
                     <path d="M11.6602 1.84961L10.0293 0.208984L0.263672 9.97461L10.0293 19.7402L11.6602 18.0996L3.52539 9.97461L11.6602 1.84961Z" fill="currentColor"/>
@@ -241,37 +268,52 @@ export default function Home() {
                 <div className="w-[50px]"></div> {/* Spacer for centering */}
               </div>
 
-              <form onSubmit={handleFeedbackSubmit} className="space-y-5">
-                {/* Advanced Apple-style glass card */}
-                <div className="bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/10 rounded-[28px] p-5 shadow-2xl relative overflow-hidden">
-                  
-                  {/* Subtle top glare/highlight */}
+              <form onSubmit={handleFeedbackSubmit} className="space-y-6">
+                <div className="bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/10 rounded-[28px] overflow-hidden shadow-2xl relative">
                   <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-                  <div className="space-y-5">
+                  <div className="p-5 space-y-6">
+                    {/* Category Selector */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider pl-1">Category</label>
+                      <Select value={category} onValueChange={setCategory}>
+                        <SelectTrigger className="w-full h-12 bg-white/5 border-white/10 rounded-xl focus:ring-0 focus:border-[#007AFF] text-[16px]">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#1C1C1E] border-white/10 text-white rounded-xl shadow-xl">
+                          <SelectItem value="Bug">Bug Report</SelectItem>
+                          <SelectItem value="Feature Request">Feature Request</SelectItem>
+                          <SelectItem value="UI/UX Suggestion">UI/UX Suggestion</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     
-                    {/* Upload / Image Section */}
-                    <div>
+                    <div className="h-px w-full bg-white/5" />
+
+                    {/* Upload Section */}
+                    <div className="space-y-2">
+                       <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider pl-1">Screenshot</label>
                       {!preview ? (
                         <div className="grid gap-3">
                           <Button
                             type="button"
                             variant="secondary"
-                            className="h-16 flex items-center justify-center gap-2 rounded-2xl bg-white/10 hover:bg-white/15 text-white border-0 transition-colors"
+                            className="h-14 flex items-center justify-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/5 transition-colors"
                             onClick={() => fileInputRef.current?.click()}
                           >
                             <Upload className="h-5 w-5 opacity-70" />
                             <span className="text-[16px] font-medium">Upload Screenshot</span>
                           </Button>
-                          <div className="flex items-center justify-center gap-2 text-zinc-500 text-sm mt-1">
+                          <div className="flex items-center justify-center gap-2 text-zinc-500 text-[13px] mt-1">
                             <ClipboardPaste className="h-4 w-4" />
                             <span>Or paste from clipboard</span>
                           </div>
                         </div>
                       ) : (
-                        <div className="relative rounded-[20px] overflow-hidden border border-white/10 bg-black/50 group shadow-inner">
+                        <div className="relative rounded-[16px] overflow-hidden border border-white/10 bg-black/50 group shadow-inner">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={preview} alt="Upload Preview" className="w-full object-contain max-h-[300px]" />
+                          <img src={preview} alt="Upload Preview" className="w-full object-contain max-h-[250px]" />
                           <button
                             type="button"
                             onClick={clearImage}
@@ -283,8 +325,6 @@ export default function Home() {
                           </button>
                         </div>
                       )}
-                      
-                      {/* FIX: Removed capture attribute, standard file picking for Photo Library access */}
                       <input
                         type="file"
                         accept="image/*"
@@ -294,16 +334,17 @@ export default function Home() {
                       />
                     </div>
 
-                    <div className="h-px w-full bg-white/10" />
+                    <div className="h-px w-full bg-white/5" />
 
-                    {/* Text Section */}
-                    <div>
+                    {/* Text Section / Additional Notes */}
+                    <div className="space-y-2">
+                      <label htmlFor="text" className="text-xs font-semibold text-zinc-500 uppercase tracking-wider pl-1">Additional Notes</label>
                       <textarea
                         id="text"
                         placeholder="What's going on?"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-                        className="w-full min-h-[120px] rounded-2xl bg-transparent border-0 text-[17px] focus:outline-none resize-none text-zinc-100 placeholder:text-zinc-500 p-0"
+                        className="w-full min-h-[120px] rounded-xl bg-white/5 border border-white/5 text-[16px] focus:outline-none focus:border-[#007AFF]/50 resize-y text-zinc-100 placeholder:text-zinc-600 p-3"
                       />
                     </div>
                   </div>
@@ -322,8 +363,88 @@ export default function Home() {
                   {isSubmitting ? "Sending..." : "Send Feedback"}
                 </Button>
               </form>
+
+              {/* History Section */}
+              <div className="mt-12 space-y-4">
+                <h3 className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider pl-1">
+                  Your Previous Feedback
+                </h3>
+                
+                {isLoadingHistory ? (
+                   <div className="text-center py-6 text-zinc-600 flex justify-center">
+                     <Loader2 className="h-5 w-5 animate-spin" />
+                   </div>
+                ) : history.length === 0 ? (
+                  <div className="bg-[#1C1C1E]/30 border border-white/5 rounded-[20px] p-6 text-center text-zinc-500 text-[15px]">
+                    No previous feedback found.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {history.map((item) => (
+                      <div key={item.id} className="bg-[#1C1C1E]/60 border border-white/10 rounded-[20px] p-4 flex gap-4 overflow-hidden">
+                        {item.imageUrl && (
+                          <div className="w-16 h-16 shrink-0 rounded-xl bg-black overflow-hidden flex items-center justify-center border border-white/5">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={item.imageUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="flex-grow min-w-0 flex flex-col justify-center">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                             <span className="text-[12px] font-medium text-[#007AFF] bg-[#007AFF]/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+                               {item.category}
+                             </span>
+                             <span className="text-[12px] text-zinc-500 whitespace-nowrap">
+                               {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                             </span>
+                          </div>
+                          <p className="text-[15px] text-zinc-300 truncate">
+                            {item.text || <span className="italic text-zinc-600">No notes provided</span>}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
+
+          {/* STEP 3: SUCCESS STATE */}
+          {step === "success" && (
+            <motion.div
+              key="success-step"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, type: "spring", bounce: 0.4 }}
+              className="absolute w-full top-1/2 -mt-24 space-y-8 flex flex-col items-center justify-center"
+            >
+              <div className="text-center space-y-4">
+                <motion.div 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring", bounce: 0.6 }}
+                  className="mx-auto w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center"
+                >
+                  <CheckCircle2 className="text-emerald-500 w-12 h-12" />
+                </motion.div>
+                <h2 className="text-[26px] font-semibold tracking-tight text-white leading-tight mt-4">
+                  Thank You!
+                </h2>
+                <p className="text-[16px] text-zinc-400 max-w-[250px] mx-auto text-center leading-relaxed box-border">
+                  Thanks for helping us build WorkoutAI!
+                </p>
+              </div>
+
+              <Button 
+                onClick={resetForm}
+                className="w-full max-w-[200px] h-[50px] rounded-full bg-white/10 hover:bg-white/20 text-white font-medium text-[16px] border border-white/5 transition-all"
+              >
+                Send another
+              </Button>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </div>
     </main>
