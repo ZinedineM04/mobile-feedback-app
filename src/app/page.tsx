@@ -277,14 +277,20 @@ export default function Home() {
                     <div className="space-y-2">
                       <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider pl-1">Category</label>
                       <Select value={category} onValueChange={(val) => setCategory(val || "Bug")}>
-                        <SelectTrigger className="w-full h-12 bg-white/5 border-white/10 rounded-xl focus:ring-0 focus:border-[#007AFF] text-[16px]">
+                        <SelectTrigger 
+                          className="w-full h-12 bg-white/5 border-white/10 rounded-xl focus:ring-0 focus:border-[#007AFF] text-[16px] text-zinc-100"
+                          style={{ fontFamily: "inherit" }}
+                        >
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
-                        <SelectContent className="bg-[#1C1C1E] border-white/10 text-white rounded-xl shadow-xl">
-                          <SelectItem value="Bug">Bug Report</SelectItem>
-                          <SelectItem value="Feature Request">Feature Request</SelectItem>
-                          <SelectItem value="UI/UX Suggestion">UI/UX Suggestion</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
+                        <SelectContent 
+                          className="bg-[#1C1C1E]/95 backdrop-blur-xl border-white/10 text-zinc-100 rounded-xl shadow-2xl"
+                          style={{ fontFamily: "inherit" }}
+                        >
+                          <SelectItem value="Bug" className="focus:bg-white/10 focus:text-white">Bug Report</SelectItem>
+                          <SelectItem value="Feature Request" className="focus:bg-white/10 focus:text-white">Feature Request</SelectItem>
+                          <SelectItem value="UI/UX Suggestion" className="focus:bg-white/10 focus:text-white">UI/UX Suggestion</SelectItem>
+                          <SelectItem value="Other" className="focus:bg-white/10 focus:text-white">Other</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
