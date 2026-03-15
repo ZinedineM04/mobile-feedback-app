@@ -276,7 +276,7 @@ export default function Home() {
                     {/* Category Selector */}
                     <div className="space-y-2">
                       <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider pl-1">Category</label>
-                      <Select value={category} onValueChange={setCategory}>
+                      <Select value={category} onValueChange={(val) => setCategory(val || "Bug")}>
                         <SelectTrigger className="w-full h-12 bg-white/5 border-white/10 rounded-xl focus:ring-0 focus:border-[#007AFF] text-[16px]">
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
