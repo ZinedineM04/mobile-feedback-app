@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Upload, ClipboardPaste, Send, Loader2, Apple, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import imageCompression from "browser-image-compression";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -135,7 +136,21 @@ export default function Home() {
     formData.append("pin", pin);
     formData.append("category", category);
     if (text) formData.append("text", text);
-    if (file) formData.append("file", file);
+    
+    if (file) {
+      try {
+        const options = {
+          maxSizeMB: 4,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        };
+        const compressedFile = await imageCompression(file, options);
+        formData.append("file", compressedFile);
+      } catch (error) {
+        console.error("Compression error:", error);
+        formData.append("file", file); // Fallback to original
+      }
+    }
 
     try {
       const res = await fetch("/api/upload", {

@@ -1,13 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { put } from "@vercel/blob";
+import { z } from "zod";
+
+const submissionSchema = z.object({
+  pin: z.string(),
+  category: z.string().optional().default("Other"),
+  text: z.string().optional().nullable(),
+});
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const pin = formData.get("pin") as string;
-    const category = (formData.get("category") as string) || "Other";
-    const text = formData.get("text") as string | null;
+    
+    const parsed = submissionSchema.safeParse({
+      pin: formData.get("pin"),
+      category: formData.get("category"),
+      text: formData.get("text") || null
+    });
+
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+    }
+
+    const { pin } = parsed.data;
+    const category = parsed.data.category || "Other";
+    const text = parsed.data.text ?? null;
     const file = formData.get("file") as File | null;
 
     // Validate access logic (0000 to 0014)
