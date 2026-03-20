@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { put } from "@vercel/blob";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,26 +19,11 @@ export async function POST(req: NextRequest) {
     let imageUrl = null;
 
     if (file) {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      // Local storage configuration
-      const uploadDir = join(process.cwd(), "public/uploads");
-      
-      if (!existsSync(uploadDir)) {
-        await mkdir(uploadDir, { recursive: true });
-      }
-
-      // Generate a unique file name
       const fileName = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
-      const filePath = join(uploadDir, fileName);
-
-      await writeFile(filePath, buffer);
       
-      // Vercel Ready note: Replace local file save with Vercel Blob based on env variables
-      // e.g. if (process.env.BLOB_READ_WRITE_TOKEN) { ... }
-      
-      imageUrl = `/uploads/${fileName}`;
+      // Upload to Vercel Blob
+      const blob = await put(fileName, file, { access: 'public' });
+      imageUrl = blob.url;
     }
 
     const feedback = await prisma.feedback.create({
